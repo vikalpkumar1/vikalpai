@@ -1,0 +1,6 @@
+{
+  "name": "vikalp-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Vikalp.ai - Bharat ka apna AI, powered by Groq via a serverless proxy"
+}

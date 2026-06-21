@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Vikalp.ai — भारत का अपना AI</title>
+<meta name="description" content="Vikalp.ai — Bharat ka apna AI. Multi-persona chat, Kundali readings, Indian languages, news and more, powered by Groq."/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:wght@400;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#0a0a0f;--bg2:#0f0f18;--bg3:#13131f;--bg4:#18182a;
+  --card:#1a1a2e;--card2:#1e1e35;--card3:#22223c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --accent:#6366f1;--accent2:#818cf8;--accent3:#a5b4fc;
+  --saffron:#f97316;--saffron2:#fb923c;--gold:#fbbf24;
+  --green:#22c55e;--red:#ef4444;--pink:#ec4899;--cyan:#06b6d4;
+  --white:#f8fafc;--white70:rgba(248,250,252,0.7);--white40:rgba(248,250,252,0.4);
+  --white15:rgba(248,250,252,0.1);--white06:rgba(248,250,252,0.04);
+  --muted:#64748b;--glow:rgba(99,102,241,0.3);--glow-o:rgba(249,115,22,0.25);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--white);font-family:'Inter',sans-serif;min-height:100vh;overflow-x:hidden;-webkit-font-smoothing:antialiased;}
+button,input,textarea,select{font-family:inherit;}
+:focus-visible{outline:2px solid var(--accent3);outline-offset:2px;}
+
+/* AMBIENT */
+.amb{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+.amb-orb{position:absolute;border-radius:50%;filter:blur(180px);}
+.a1{width:1000px;height:1000px;background:radial-gradient(circle,#6366f1,transparent 70%);opacity:0.04;top:-400px;right:-300px;}
+.a2{width:800px;height:800px;background:radial-gradient(circle,#f97316,transparent 70%);opacity:0.04;bottom:-300px;left:-200px;}
+.a3{width:600px;height:600px;background:radial-gradient(circle,#06b6d4,transparent 70%);opacity:0.025;top:30%;left:20%;}
+
+/* API KEY SCREEN (fallback if no server key) */
+#apiScreen{position:fixed;inset:0;z-index:9999;background:radial-gradient(ellipse at 50% 40%,#0d0d1a 0%,#0a0a0f 70%);display:flex;align-items:center;justify-content:center;padding:20px;}
+.api-wrap{max-width:440px;width:100%;text-align:center;}
+.api-logo{width:72px;height:72px;border-radius:20px;margin:0 auto 20px;background:linear-gradient(135deg,var(--accent),var(--saffron));display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 0 40px var(--glow);}
+.api-title{font-family:'Space Grotesk',sans-serif;font-size:30px;font-weight:800;letter-spacing:-0.04em;margin-bottom:8px;
+  background:linear-gradient(135deg,var(--white) 0%,var(--accent3) 50%,var(--saffron2) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.api-sub{color:var(--white40);font-size:13px;line-height:1.7;margin-bottom:24px;}
+.api-spinner{width:28px;height:28px;border-radius:50%;border:3px solid var(--border2);border-top-color:var(--accent);margin:0 auto;animation:spin 0.8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* TOPBAR */
+.topbar{height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;background:rgba(10,10,15,0.85);backdrop-filter:blur(40px);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;cursor:pointer;background:none;border:none;}
+.brand-ico{width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--saffron));display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 16px var(--glow);flex-shrink:0;}
+.brand-text{font-family:'Space Grotesk',sans-serif;font-size:17px;font-weight:700;letter-spacing:-0.03em;color:var(--white);}
+.brand-text span{color:var(--saffron2);}
+.topbar-r{display:flex;align-items:center;gap:8px;}
+.live-badge{display:flex;align-items:center;gap:5px;padding:5px 10px;border-radius:999px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);font-size:10px;font-weight:700;color:var(--green);letter-spacing:0.05em;}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--green);animation:ldot 1.5s infinite;}
+@keyframes ldot{0%,100%{opacity:1}50%{opacity:0.2}}
+.menu-btn{width:36px;height:36px;border-radius:9px;border:1px solid var(--border2);background:var(--white06);color:var(--white);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+
+/* LAYOUT */
+#app{display:none;flex-direction:column;min-height:100vh;}
+.layout{display:flex;flex:1;position:relative;z-index:1;}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:rgba(10,10,15,0.92);border-right:1px solid var(--border);padding:14px 10px;display:flex;flex-direction:column;gap:1px;position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;flex-shrink:0;transition:transform 0.25s ease;}
+.sidebar::-webkit-scrollbar{width:0;}
+.sb-sec{font-size:9px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--muted);padding:12px 10px 5px;}
+.sb-btn{display:flex;align-items:center;gap:8px;padding:9px 12px;border-radius:10px;cursor:pointer;font-size:12px;font-weight:500;color:var(--white40);transition:all 0.15s;border:1px solid transparent;background:none;width:100%;text-align:left;}
+.sb-btn:hover{background:var(--white15);color:var(--white);}
+.sb-btn.on{background:rgba(99,102,241,0.12);color:var(--accent3);border-color:rgba(99,102,241,0.2);}
+.sb-btn .si{font-size:14px;width:18px;text-align:center;flex-shrink:0;}
+.sb-div{height:1px;background:var(--border);margin:8px 10px;}
+.per-btn{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:11px;font-weight:500;color:var(--white40);transition:all 0.15s;border:1px solid transparent;background:none;width:100%;text-align:left;}
+.per-btn:hover{background:var(--white15);color:var(--white);}
+.per-btn.on{background:rgba(236,72,153,0.1);color:#f9a8d4;border-color:rgba(236,72,153,0.2);}
+.lang-box{padding:10px;background:var(--card);border-radius:12px;border:1px solid var(--border);margin:6px 0;}
+.lang-box-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;}
+.lang-grid{display:grid;grid-template-columns:1fr 1fr;gap:3px;}
+.lc{padding:5px 6px;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--white06);color:var(--white40);text-align:center;transition:all 0.15s;}
+.lc:hover,.lc.on{background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.3);color:var(--accent3);}
+.model-sel{padding:10px;background:var(--card);border-radius:12px;border:1px solid var(--border);margin:4px 0;}
+.model-sel label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);display:block;margin-bottom:7px;}
+.model-sel select{width:100%;padding:7px 10px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;color:var(--white);font-size:11px;outline:none;}
+.ticker-box{margin-top:auto;padding:10px;background:var(--card);border-radius:12px;border:1px solid var(--border);}
+.ticker-label{font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.trow{display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-bottom:1px solid var(--border);font-size:10px;}
+.trow:last-child{border:none;}
+.tn{color:var(--white40);}
+.tv{font-family:'Space Mono',monospace;font-weight:700;font-size:10px;}
+.tv.up{color:var(--green);}
+.tv.dn{color:var(--red);}
+.sidebar-backdrop{display:none;}
+
+/* CONTENT */
+.content{flex:1;display:flex;flex-direction:column;min-width:0;}
+.panel{display:none;flex:1;flex-direction:column;}
+.panel.on{display:flex;}
+
+/* CHAT */
+.chat-outer{flex:1;display:flex;flex-direction:column;max-width:820px;width:100%;margin:0 auto;padding:0 16px;}
+.welcome{padding:40px 0 24px;text-align:center;}
+.w-icon{width:72px;height:72px;border-radius:22px;margin:0 auto 18px;background:linear-gradient(135deg,var(--accent),var(--saffron),var(--gold));display:flex;align-items:center;justify-content:center;font-size:32px;box-shadow:0 0 50px var(--glow);}
+.w-title{font-family:'Space Grotesk',sans-serif;font-size:clamp(30px,7vw,52px);font-weight:900;letter-spacing:-0.04em;margin-bottom:10px;
+  background:linear-gradient(135deg,var(--white) 0%,var(--accent3) 40%,var(--saffron2) 70%,var(--gold) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1.05;}
+.w-sub{color:var(--white40);font-size:13px;max-width:440px;margin:0 auto 24px;line-height:1.7;}
+.cur-persona{display:inline-flex;align-items:center;gap:8px;padding:8px 16px;border-radius:999px;background:var(--card);border:1px solid var(--border2);margin-bottom:24px;font-size:12px;font-weight:600;}
+.s-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:20px;}
+.sc{padding:14px 16px;border-radius:14px;background:var(--card2);border:1px solid var(--border);cursor:pointer;transition:all 0.2s;display:flex;gap:10px;align-items:flex-start;text-align:left;}
+.sc:hover{border-color:rgba(99,102,241,0.4);transform:translateY(-2px);}
+.sc-em{font-size:20px;flex-shrink:0;margin-top:1px;}
+.sc-title{font-size:12px;font-weight:700;color:var(--white);margin-bottom:2px;}
+.sc-desc{font-size:10px;color:var(--white40);line-height:1.4;}
+
+.msgs{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:16px 0 8px;}
+.msgs::-webkit-scrollbar{width:3px;}
+.msgs::-webkit-scrollbar-thumb{background:var(--card3);border-radius:2px;}
+.msg{display:flex;gap:10px;}
+.msg.user{flex-direction:row-reverse;}
+.av{width:30px;height:30px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.msg.ai .av{background:linear-gradient(135deg,var(--accent),var(--saffron));}
+.msg.user .av{background:linear-gradient(135deg,#1e1e3f,#2d1b69);}
+.mbody{max-width:78%;display:flex;flex-direction:column;gap:4px;}
+.msg.user .mbody{align-items:flex-end;}
+.bbl{padding:11px 15px;border-radius:16px;font-size:14px;line-height:1.7;}
+.msg.user .bbl{background:linear-gradient(135deg,#1e1e3f,#16163a);border:1px solid rgba(99,102,241,0.25);border-radius:16px 16px 4px 16px;}
+.msg.ai .bbl{background:var(--card3);border:1px solid var(--border);border-radius:16px 16px 16px 4px;}
+.bbl img{max-width:100%;border-radius:10px;margin-top:6px;}
+.mmeta{font-size:10px;color:var(--muted);padding:0 3px;}
+.ai-tag{display:inline-flex;align-items:center;gap:5px;margin-bottom:5px;align-self:flex-start;padding:3px 9px;border-radius:999px;font-size:9px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;background:rgba(99,102,241,0.1);border:1px solid rgba(99,102,241,0.2);color:var(--accent3);}
+.think-bbl{display:flex;gap:5px;padding:12px 16px;background:var(--card3);border:1px solid var(--border);border-radius:16px 16px 16px 4px;}
+.think-bbl span{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:th 1.2s infinite;}
+.think-bbl span:nth-child(2){animation-delay:.18s;background:var(--saffron);}
+.think-bbl span:nth-child(3){animation-delay:.36s;background:var(--gold);}
+@keyframes th{0%,60%,100%{transform:translateY(0);opacity:0.5}30%{transform:translateY(-7px);opacity:1}}
+
+.bbl strong{color:var(--saffron2);}
+.bbl em{color:var(--white40);}
+.bbl code{background:rgba(255,255,255,0.06);padding:2px 6px;border-radius:5px;font-family:'Space Mono',monospace;font-size:11px;color:var(--gold);}
+.bbl pre{background:#060610;border:1px solid var(--border2);border-radius:12px;padding:14px;margin:10px 0;overflow-x:auto;font-family:'Space Mono',monospace;font-size:12px;line-height:1.6;color:#a5b4fc;}
+.bbl ul,.bbl ol{padding-left:18px;margin:6px 0;}
+.bbl li{margin-bottom:4px;color:var(--white70);}
+.bbl h3{color:var(--accent3);font-size:14px;font-weight:700;margin:10px 0 4px;}
+
+/* IMAGE PREVIEW */
+.img-preview{position:relative;display:inline-block;margin-bottom:8px;}
+.img-preview img{max-width:120px;max-height:120px;border-radius:10px;border:1px solid var(--border2);display:block;}
+.img-preview button{position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:50%;background:var(--red);border:none;color:white;font-size:11px;cursor:pointer;line-height:1;}
+
+/* INPUT */
+.input-area{padding:8px 0 16px;position:sticky;bottom:0;background:linear-gradient(to top,var(--bg) 65%,transparent);}
+.mode-row{display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;}
+.mc{padding:4px 11px;border-radius:999px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--white06);color:var(--muted);}
+.mc:hover,.mc.on{background:rgba(99,102,241,0.12);border-color:rgba(99,102,241,0.3);color:var(--accent3);}
+.ibox{display:flex;align-items:flex-end;gap:8px;background:var(--card2);border:1.5px solid var(--border2);border-radius:18px;padding:10px 10px 10px 16px;}
+.ibox:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(99,102,241,0.15);}
+#inp{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:14px;resize:none;max-height:140px;line-height:1.6;}
+#inp::placeholder{color:var(--muted);}
+.ibtns{display:flex;align-items:center;gap:4px;flex-shrink:0;}
+.ibtn{width:32px;height:32px;border-radius:9px;border:none;background:var(--white06);color:var(--muted);cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;}
+.ibtn:hover{background:rgba(99,102,241,0.15);color:var(--accent3);}
+.ibtn.rec{background:rgba(239,68,68,0.15);color:var(--red);animation:pulse-rec 1s infinite;}
+@keyframes pulse-rec{0%,100%{opacity:1}50%{opacity:0.5}}
+.send-btn{width:38px;height:38px;border-radius:12px;border:none;background:linear-gradient(135deg,var(--accent),var(--saffron));color:var(--white);font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px var(--glow);}
+.send-btn:disabled{opacity:0.3;cursor:not-allowed;}
+.ifooter{display:flex;justify-content:space-between;margin-top:6px;padding:0 2px;}
+.ifl{font-size:10px;color:var(--muted);}
+#fileInp{display:none;}
+
+/* KUNDALI PANEL */
+.panel-wrap{max-width:720px;width:100%;margin:0 auto;padding:24px 16px 40px;flex:1;}
+.ph-title{font-family:'Space Grotesk',sans-serif;font-size:26px;font-weight:800;margin-bottom:6px;}
+.ph-sub{color:var(--white40);font-size:13px;margin-bottom:24px;line-height:1.6;}
+.form-card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:20px;margin-bottom:16px;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
+.form-field{display:flex;flex-direction:column;gap:5px;}
+.form-field.full{grid-column:1/-1;}
+.form-field label{font-size:11px;font-weight:600;color:var(--white40);}
+.form-field input{padding:10px 12px;background:var(--bg3);border:1px solid var(--border2);border-radius:9px;color:var(--white);font-size:13px;outline:none;}
+.form-field input:focus{border-color:var(--accent);}
+.submit-btn{width:100%;padding:13px;border-radius:11px;border:none;background:linear-gradient(135deg,var(--accent),var(--saffron));color:white;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;}
+.submit-btn:disabled{opacity:0.5;cursor:not-allowed;}
+.result-card{background:var(--card3);border:1px solid var(--border);border-radius:16px;padding:20px;font-size:14px;line-height:1.8;white-space:pre-wrap;}
+
+/* NEWS PANEL */
+.news-grid{display:flex;flex-direction:column;gap:10px;}
+.news-card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.news-cat{display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--saffron2);background:rgba(249,115,22,0.1);padding:2px 8px;border-radius:5px;margin-bottom:8px;}
+.news-title{font-size:14px;font-weight:700;margin-bottom:5px;line-height:1.4;}
+.news-sum{font-size:12px;color:var(--white40);line-height:1.6;}
+.refresh-btn{padding:8px 16px;border-radius:10px;border:1px solid var(--border2);background:var(--white06);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;margin-bottom:16px;}
+
+/* EMPTY/LOADING STATES */
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);font-size:13px;}
+.spinner-sm{width:18px;height:18px;border-radius:50%;border:2.5px solid var(--border2);border-top-color:var(--accent);display:inline-block;animation:spin 0.8s linear infinite;}
+
+/* RESPONSIVE */
+@media (max-width:860px){
+  .sidebar{position:fixed;left:0;top:56px;height:calc(100vh - 56px);z-index:300;transform:translateX(-100%);box-shadow:20px 0 60px rgba(0,0,0,0.5);}
+  .sidebar.open{transform:translateX(0);}
+  .sidebar-backdrop{display:none;position:fixed;inset:56px 0 0 0;background:rgba(0,0,0,0.5);z-index:250;}
+  .sidebar-backdrop.show{display:block;}
+  .s-grid{grid-template-columns:1fr;}
+  .form-row{grid-template-columns:1fr;}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:0.001ms!important;animation-iteration-count:1!important;}
+}
+</style>
+</head>
+<body>
+
+<div class="amb"><div class="amb-orb a1"></div><div class="amb-orb a2"></div><div class="amb-orb a3"></div></div>
+
+<div id="apiScreen">
+  <div class="api-wrap">
+    <div class="api-logo">🪔</div>
+    <div class="api-title">Vikalp.ai</div>
+    <div class="api-sub">भारत का अपना AI<br/>Connecting to the server…</div>
+    <div class="api-spinner"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="topbar">
+    <button class="menu-btn" id="menuBtn" aria-label="Toggle menu">☰</button>
+    <button class="brand" id="homeBtn">
+      <div class="brand-ico">🪔</div>
+      <div class="brand-text"><b>Vikalp</b><span>.ai</span></div>
+    </button>
+    <div class="topbar-r">
+      <div class="live-badge"><span class="live-dot"></span>LIVE</div>
+    </div>
+  </div>
+
+  <div class="layout">
+    <div class="sidebar-backdrop" id="sbBackdrop"></div>
+    <div class="sidebar" id="sidebar">
+      <div class="sb-sec">Workspace</div>
+      <button class="sb-btn on" data-panel="chat"><span class="si">💬</span> Chat</button>
+      <button class="sb-btn" data-panel="kundali"><span class="si">🔮</span> Kundali</button>
+      <button class="sb-btn" data-panel="news"><span class="si">📰</span> News</button>
+
+      <div class="sb-div"></div>
+      <div class="sb-sec">Persona</div>
+      <div id="personaList"></div>
+
+      <div class="sb-div"></div>
+      <div class="lang-box">
+        <div class="lang-box-label">Reply Language</div>
+        <div class="lang-grid" id="langGrid"></div>
+      </div>
+
+      <div class="model-sel">
+        <label>Model</label>
+        <select id="modelSel">
+          <option value="llama-3.3-70b-versatile">Llama 3.3 70B</option>
+          <option value="llama-3.1-8b-instant">Llama 3.1 8B (fast)</option>
+        </select>
+      </div>
+
+      <div class="ticker-box">
+        <div class="ticker-label">📈 Market</div>
+        <div id="tickerRows"></div>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- CHAT PANEL -->
+      <div class="panel on" id="panel-chat">
+        <div class="chat-outer">
+          <div id="welcomeBlock"></div>
+          <div class="msgs" id="msgs" style="display:none;"></div>
+          <div class="input-area">
+            <div class="mode-row" id="modeRow"></div>
+            <div id="imgPreviewArea"></div>
+            <div class="ibox">
+              <textarea id="inp" rows="1" placeholder="Vikalp se kuch bhi pucho…"></textarea>
+              <div class="ibtns">
+                <button class="ibtn" id="micBtn" title="Voice input">🎤</button>
+                <button class="ibtn" id="imgBtn" title="Attach image">📷</button>
+                <input type="file" id="fileInp" accept="image/*"/>
+                <button class="send-btn" id="sendBtn" disabled>➤</button>
+              </div>
+            </div>
+            <div class="ifooter">
+              <div class="ifl" id="footerHint">Enter to send · Shift+Enter for new line</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- KUNDALI PANEL -->
+      <div class="panel" id="panel-kundali">
+        <div class="panel-wrap">
+          <div class="ph-title">🔮 Kundali Reading</div>
+          <div class="ph-sub">Apni janam details daalo aur AI-powered Vedic astrology insight paao.</div>
+          <div class="form-card">
+            <div class="form-row">
+              <div class="form-field"><label>Name</label><input id="kName" type="text" placeholder="Your name"/></div>
+              <div class="form-field"><label>Gender</label><input id="kGender" type="text" placeholder="Male/Female/Other"/></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field"><label>Date of Birth</label><input id="kDob" type="date"/></div>
+              <div class="form-field"><label>Time of Birth</label><input id="kTob" type="time"/></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field full"><label>Place of Birth</label><input id="kPob" type="text" placeholder="City, State, Country"/></div>
+            </div>
+            <button class="submit-btn" id="kGenBtn">Generate Kundali Reading</button>
+          </div>
+          <div id="kundaliResult"></div>
+        </div>
+      </div>
+
+      <!-- NEWS PANEL -->
+      <div class="panel" id="panel-news">
+        <div class="panel-wrap">
+          <div class="ph-title">📰 India Today</div>
+          <div class="ph-sub">AI-curated summary of major themes happening across India right now.</div>
+          <button class="refresh-btn" id="newsRefreshBtn">↻ Refresh news</button>
+          <div class="news-grid" id="newsGrid"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============ CONFIG: PERSONAS ============ */
+const PERSONAS = {
+  guru: {
+    name:'Vedic Guru', emoji:'🕉️',
+    system:'You are a warm, wise Vedic Guru who speaks with the calm authority of Indian spiritual tradition. Draw on the Bhagavad Gita, Upanishads, and Vedic philosophy. Speak in a gentle, grounding tone. Use simple Hinglish sprinkled with Sanskrit terms (explain them briefly). Keep answers practical, never preachy. Keep responses focused and not too long unless asked for depth.'
+  },
+  dadaji: {
+    name:'Dada Ji', emoji:'👴',
+    system:'You are Dada Ji — a loving, slightly old-school Indian grandfather full of life experience, proverbs, and dry humor. Speak in warm Hinglish. Give advice the way a grandfather would: direct, caring, sometimes stubborn about "purane zamane ki baatein" but ultimately wise. Use Hindi proverbs (kahawatein) where natural.'
+  },
+  dost: {
+    name:'Dost', emoji:'😄',
+    system:'You are Dost — a casual, fun, supportive best friend who talks in relaxed Hinglish like a young Indian texting their best buddy. Be encouraging, witty, a little filmy/dramatic for fun, but genuinely helpful. Use casual language, no formality.'
+  },
+  kavi: {
+    name:'Kavi', emoji:'✒️',
+    system:'You are Kavi — a poetic soul who responds with the sensibility of an Indian poet/shायar. Where appropriate, weave in metaphor, occasional shер or couplet in Hindi/Urdu (transliterated), and beautiful turns of phrase. Still answer the practical question clearly, but give it literary color.'
+  },
+  scientist: {
+    name:'Scientist', emoji:'🔬',
+    system:'You are a rigorous, precise scientist. Answer with accuracy, structure, and intellectual honesty. Cite mechanisms and reasoning, not just conclusions. Use clear technical language but explain jargon. Be willing to say "this is uncertain" when it is.'
+  },
+  coder: {
+    name:'Coder', emoji:'💻',
+    system:'You are an expert software engineer. Give clean, correct, idiomatic code with brief explanations. Default to best practices. Use code blocks with proper syntax. Be concise — skip unnecessary preamble.'
+  }
+};
+
+const LANGUAGES = [
+  {code:'auto', label:'Auto'},{code:'hi', label:'हिंदी'},{code:'en', label:'English'},
+  {code:'hinglish', label:'Hinglish'},{code:'bn', label:'বাংলা'},{code:'ta', label:'தமிழ்'},
+  {code:'te', label:'తెలుగు'},{code:'mr', label:'मराठी'},{code:'gu', label:'ગુજરાતી'},
+  {code:'pa', label:'ਪੰਜਾਬੀ'}
+];
+
+const STARTERS = [
+  {em:'🕉️',title:'Gita ka saar',desc:'Bhagavad Gita ke core lessons samjhao'},
+  {em:'💡',title:'Career advice',desc:'Job switch karna chahiye ya nahi?'},
+  {em:'🍲',title:'Recipe likho',desc:'Ghar pe banaye jaane wali ek simple recipe'},
+  {em:'🐍',title:'Code likho',desc:'Python mein binary search implement karo'}
+];
+
+/* ============ STATE ============ */
+let state = {
+  persona: 'dost',
+  lang: 'auto',
+  model: 'llama-3.3-70b-versatile',
+  messages: [],   // {role, content, image?}
+  pendingImage: null,
+  isStreaming: false,
+  recognizing: false
+};
+
+/* ============ INIT ============ */
+function init(){
+  renderPersonaList();
+  renderLangGrid();
+  renderModeRow();
+  renderWelcome();
+  renderTicker();
+  document.getElementById('apiScreen').style.display='none';
+  document.getElementById('app').style.display='flex';
+  wireEvents();
+}
+
+function renderPersonaList(){
+  const el = document.getElementById('personaList');
+  el.innerHTML = Object.entries(PERSONAS).map(([key,p])=>`
+    <button class="per-btn ${key===state.persona?'on':''}" data-persona="${key}">
+      <span>${p.emoji}</span><span>${p.name}</span>
+    </button>`).join('');
+  el.querySelectorAll('.per-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.persona = btn.dataset.persona;
+      renderPersonaList();
+      renderWelcome();
+    });
+  });
+}
+
+function renderLangGrid(){
+  const el = document.getElementById('langGrid');
+  el.innerHTML = LANGUAGES.map(l=>`<div class="lc ${l.code===state.lang?'on':''}" data-lang="${l.code}">${l.label}</div>`).join('');
+  el.querySelectorAll('.lc').forEach(c=>{
+    c.addEventListener('click', ()=>{
+      state.lang = c.dataset.lang;
+      renderLangGrid();
+    });
+  });
+}
+
+let activeMode = 'chat'; // chat | search-style toggle (kept simple)
+function renderModeRow(){
+  document.getElementById('modeRow').innerHTML = `
+    <div class="mc on">💬 Normal</div>
+    <div class="mc" id="modeConcise">⚡ Concise</div>
+    <div class="mc" id="modeDetailed">📖 Detailed</div>`;
+}
+
+function renderWelcome(){
+  const p = PERSONAS[state.persona];
+  document.getElementById('welcomeBlock').innerHTML = `
+    <div class="welcome">
+      <div class="w-icon">${p.emoji}</div>
+      <div class="w-title">Vikalp.ai</div>
+      <div class="w-sub">Bharat ka apna AI — multi-persona chat, Kundali, news aur bahut kuch, ek hi jagah.</div>
+      <div class="cur-persona">${p.emoji} Talking as <b>${p.name}</b></div>
+      <div class="s-grid">
+        ${STARTERS.map(s=>`<button class="sc" data-starter="${s.title}">
+          <div class="sc-em">${s.em}</div>
+          <div><div class="sc-title">${s.title}</div><div class="sc-desc">${s.desc}</div></div>
+        </button>`).join('')}
+      </div>
+    </div>`;
+  document.querySelectorAll('.sc').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const map = {'Gita ka saar':'Bhagavad Gita ke core lessons mujhe Hinglish mein samjhao.',
+        'Career advice':'Main apna job switch karne ke baare mein soch raha hoon. Kaise decide karu?',
+        'Recipe likho':'Ek simple aur tasty ghar ki recipe batao jo jaldi ban jaye.',
+        'Code likho':'Python mein binary search implement karke dikhao, with comments.'};
+      document.getElementById('inp').value = map[btn.dataset.starter] || btn.dataset.starter;
+      updateSendState();
+      document.getElementById('inp').focus();
+    });
+  });
+}
+
+function renderTicker(){
+  const data = [
+    {n:'NIFTY 50', v:'24,812', up:true, d:'+0.62%'},
+    {n:'SENSEX', v:'81,540', up:true, d:'+0.58%'},
+    {n:'USD/INR', v:'85.91', up:false, d:'-0.04%'},
+    {n:'GOLD (10g)', v:'₹74,200', up:true, d:'+0.21%'}
+  ];
+  document.getElementById('tickerRows').innerHTML = data.map(t=>`
+    <div class="trow"><span class="tn">${t.n}</span><span class="tv ${t.up?'up':'dn'}">${t.v} ${t.d}</span></div>
+  `).join('');
+}
+
+/* ============ PANEL SWITCHING ============ */
+function switchPanel(name){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('panel-'+name).classList.add('on');
+  document.querySelectorAll('.sb-btn').forEach(b=>b.classList.toggle('on', b.dataset.panel===name));
+  closeSidebarMobile();
+}
+
+/* ============ CHAT LOGIC ============ */
+function buildLangInstruction(){
+  if(state.lang==='auto') return '';
+  if(state.lang==='hinglish') return ' Respond in casual Hinglish (Hindi+English mixed, Latin script).';
+  const map = {hi:'Hindi',en:'English',bn:'Bengali',ta:'Tamil',te:'Telugu',mr:'Marathi',gu:'Gujarati',pa:'Punjabi'};
+  return ` Respond in ${map[state.lang]||state.lang}.`;
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div'); d.textContent = str; return d.innerHTML;
+}
+
+function formatBubble(text){
+  let html = escapeHtml(text);
+  html = html.replace(/```([\s\S]*?)```/g, (m,code)=>`<pre>${code.trim()}</pre>`);
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^- (.*)$/gm, '<li>$1</li>');
+  html = html.replace(/(<li>.*<\/li>)/gs, '<ul>$1</ul>');
+  html = html.replace(/\n/g, '<br/>');
+  return html;
+}
+
+function addMessage(role, content, imageDataUrl){
+  const msgsEl = document.getElementById('msgs');
+  document.getElementById('welcomeBlock').style.display = 'none';
+  msgsEl.style.display = 'flex';
+  const div = document.createElement('div');
+  div.className = 'msg ' + (role==='user'?'user':'ai');
+  const p = PERSONAS[state.persona];
+  const avatarChar = role==='user' ? '🙂' : p.emoji;
+  const tag = role==='ai' ? `<div class="ai-tag">${p.emoji} ${p.name}</div>` : '';
+  const imgHtml = imageDataUrl ? `<img src="${imageDataUrl}" alt="attached image"/>` : '';
+  div.innerHTML = `
+    <div class="av">${avatarChar}</div>
+    <div class="mbody">
+      ${tag}
+      <div class="bbl">${formatBubble(content)}${imgHtml}</div>
+    </div>`;
+  msgsEl.appendChild(div);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+  return div;
+}
+
+function addThinking(){
+  const msgsEl = document.getElementById('msgs');
+  const div = document.createElement('div');
+  div.className = 'msg ai';
+  div.id = 'thinkingMsg';
+  div.innerHTML = `<div class="av">${PERSONAS[state.persona].emoji}</div>
+    <div class="mbody"><div class="think-bbl"><span></span><span></span><span></span></div></div>`;
+  msgsEl.appendChild(div);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+function removeThinking(){
+  const t = document.getElementById('thinkingMsg');
+  if(t) t.remove();
+}
+
+async function sendMessage(){
+  const inp = document.getElementById('inp');
+  const text = inp.value.trim();
+  if(!text && !state.pendingImage) return;
+  if(state.isStreaming) return;
+
+  const p = PERSONAS[state.persona];
+  const userContent = text || '(image attached)';
+
+  addMessage('user', userContent, state.pendingImage);
+
+  let userMsgForApi;
+  if(state.pendingImage){
+    userMsgForApi = {
+      role:'user',
+      content:[
+        {type:'text', text: text || 'Describe and analyze this image.'},
+        {type:'image_url', image_url:{url: state.pendingImage}}
+      ]
+    };
+  } else {
+    userMsgForApi = {role:'user', content:text};
+  }
+
+  state.messages.push(userMsgForApi);
+  inp.value = '';
+  const hadImage = !!state.pendingImage;
+  state.pendingImage = null;
+  document.getElementById('imgPreviewArea').innerHTML = '';
+  autoGrow(inp);
+  updateSendState();
+
+  state.isStreaming = true;
+  updateSendState();
+  addThinking();
+
+  const sysPrompt = p.system + buildLangInstruction();
+  const modelToUse = hadImage ? 'llama-3.2-90b-vision-preview' : state.model;
+
+  try{
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: modelToUse,
+        messages: [{role:'system', content:sysPrompt}, ...state.messages.slice(-12)],
+        temperature: 0.7,
+        max_tokens: 1500
+      })
+    });
+    const data = await res.json();
+    removeThinking();
+
+    if(!res.ok){
+      addMessage('ai', '⚠️ ' + (data.error || 'Kuch gadbad ho gayi. Phir try karo.'));
+      state.isStreaming = false;
+      updateSendState();
+      return;
+    }
+
+    const reply = data.choices?.[0]?.message?.content || 'Maaf karo, jawaab nahi mil paya.';
+    addMessage('ai', reply);
+    state.messages.push({role:'assistant', content:reply});
+  } catch(err){
+    removeThinking();
+    addMessage('ai', '⚠️ Network error — connection check karo aur dobara try karo.');
+    console.error(err);
+  }
+  state.isStreaming = false;
+  updateSendState();
+}
+
+function updateSendState(){
+  const inp = document.getElementById('inp');
+  document.getElementById('sendBtn').disabled = (!inp.value.trim() && !state.pendingImage) || state.isStreaming;
+}
+
+function autoGrow(el){
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+/* ============ VOICE INPUT ============ */
+let recognition = null;
+function setupVoice(){
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if(!SR){ document.getElementById('micBtn').style.display='none'; return; }
+  recognition = new SR();
+  recognition.continuous = false;
+  recognition.interimResults = false;
+  recognition.lang = 'hi-IN';
+  recognition.onresult = (e)=>{
+    const transcript = e.results[0][0].transcript;
+    const inp = document.getElementById('inp');
+    inp.value = (inp.value ? inp.value + ' ' : '') + transcript;
+    autoGrow(inp);
+    updateSendState();
+  };
+  recognition.onend = ()=>{
+    state.recognizing = false;
+    document.getElementById('micBtn').classList.remove('rec');
+  };
+  recognition.onerror = ()=>{
+    state.recognizing = false;
+    document.getElementById('micBtn').classList.remove('rec');
+  };
+}
+function toggleVoice(){
+  if(!recognition) return;
+  if(state.recognizing){
+    recognition.stop();
+    state.recognizing = false;
+    document.getElementById('micBtn').classList.remove('rec');
+  } else {
+    try{
+      recognition.start();
+      state.recognizing = true;
+      document.getElementById('micBtn').classList.add('rec');
+    }catch(e){ console.error(e); }
+  }
+}
+
+/* ============ IMAGE ATTACH ============ */
+function handleImageFile(file){
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = (e)=>{
+    state.pendingImage = e.target.result;
+    document.getElementById('imgPreviewArea').innerHTML = `
+      <div class="img-preview"><img src="${state.pendingImage}"/><button id="removeImgBtn">✕</button></div>`;
+    document.getElementById('removeImgBtn').addEventListener('click', ()=>{
+      state.pendingImage = null;
+      document.getElementById('imgPreviewArea').innerHTML = '';
+      updateSendState();
+    });
+    updateSendState();
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ============ KUNDALI ============ */
+async function generateKundali(){
+  const name = document.getElementById('kName').value.trim();
+  const gender = document.getElementById('kGender').value.trim();
+  const dob = document.getElementById('kDob').value;
+  const tob = document.getElementById('kTob').value;
+  const pob = document.getElementById('kPob').value.trim();
+
+  if(!name || !dob || !pob){
+    document.getElementById('kundaliResult').innerHTML = `<div class="empty-state">Kripya naam, janam tithi, aur janam sthan bharein.</div>`;
+    return;
+  }
+
+  const btn = document.getElementById('kGenBtn');
+  btn.disabled = true; btn.textContent = 'Generating…';
+  document.getElementById('kundaliResult').innerHTML = `<div class="empty-state"><span class="spinner-sm"></span> Reading the stars…</div>`;
+
+  const prompt = `Generate a thoughtful Vedic astrology (Kundali) style reading for:
+Name: ${name}
+Gender: ${gender || 'not specified'}
+Date of Birth: ${dob}
+Time of Birth: ${tob || 'not specified'}
+Place of Birth: ${pob}
+
+Cover: likely Moon sign/Rashi (state this is an approximation without exact birth chart calculation), personality traits, strengths, possible life themes, and general guidance. Be warm, insightful, and grounded in real Vedic astrology concepts (Rashi, Nakshatra, Graha influences) — but include a brief honest note that a precise chart requires proper astrological software/a pandit. Write in friendly Hinglish. Keep it well organized with short sections.`;
+
+  try{
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {role:'system', content:'You are an expert in Vedic astrology (Jyotish) who gives warm, insightful, and honest readings in friendly Hinglish.'},
+          {role:'user', content: prompt}
+        ],
+        temperature: 0.8,
+        max_tokens: 1200
+      })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      document.getElementById('kundaliResult').innerHTML = `<div class="empty-state">⚠️ ${data.error || 'Kuch gadbad ho gayi.'}</div>`;
+    } else {
+      const reading = data.choices?.[0]?.message?.content || 'Reading generate nahi ho payi.';
+      document.getElementById('kundaliResult').innerHTML = `<div class="result-card">${formatBubble(reading)}</div>`;
+    }
+  } catch(err){
+    document.getElementById('kundaliResult').innerHTML = `<div class="empty-state">⚠️ Network error.</div>`;
+  }
+  btn.disabled = false; btn.textContent = 'Generate Kundali Reading';
+}
+
+/* ============ NEWS ============ */
+async function loadNews(){
+  const grid = document.getElementById('newsGrid');
+  grid.innerHTML = `<div class="empty-state"><span class="spinner-sm"></span> Curating today's themes…</div>`;
+
+  const prompt = `Give a brief AI-curated snapshot of 5 major, broadly-known ongoing themes/topics relevant to India right now (e.g. economy, politics, technology, culture, sports — general categories, not invented breaking news). For each, return: a category label, a short headline-style title, and a 2-sentence neutral summary of the general theme/topic (not fabricated specific events with fake dates/numbers — keep it general and clearly framed as an AI-generated overview, not real-time news). Format strictly as JSON array: [{"category":"...","title":"...","summary":"..."}]. Only output the JSON array, nothing else.`;
+
+  try{
+    const res = await fetch('/api/chat', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'llama-3.3-70b-versatile',
+        messages:[
+          {role:'system', content:'You output only valid JSON when asked. No markdown, no commentary.'},
+          {role:'user', content: prompt}
+        ],
+        temperature:0.6,
+        max_tokens:1000
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'failed');
+    let raw = data.choices?.[0]?.message?.content || '[]';
+    raw = raw.replace(/```json|```/g,'').trim();
+    const items = JSON.parse(raw);
+    grid.innerHTML = items.map(it=>`
+      <div class="news-card">
+        <div class="news-cat">${escapeHtml(it.category||'General')}</div>
+        <div class="news-title">${escapeHtml(it.title||'')}</div>
+        <div class="news-sum">${escapeHtml(it.summary||'')}</div>
+      </div>`).join('') || `<div class="empty-state">No themes available right now.</div>`;
+  } catch(err){
+    grid.innerHTML = `<div class="empty-state">⚠️ News load nahi ho payi. Phir try karo.</div>`;
+  }
+}
+
+/* ============ SIDEBAR MOBILE ============ */
+function closeSidebarMobile(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sbBackdrop').classList.remove('show');
+}
+function toggleSidebarMobile(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sbBackdrop').classList.toggle('show');
+}
+
+/* ============ WIRE EVENTS ============ */
+function wireEvents(){
+  document.getElementById('menuBtn').addEventListener('click', toggleSidebarMobile);
+  document.getElementById('sbBackdrop').addEventListener('click', closeSidebarMobile);
+  document.getElementById('homeBtn').addEventListener('click', ()=>switchPanel('chat'));
+
+  document.querySelectorAll('.sb-btn[data-panel]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      switchPanel(btn.dataset.panel);
+      if(btn.dataset.panel==='news' && document.getElementById('newsGrid').children.length===0){
+        loadNews();
+      }
+    });
+  });
+
+  const inp = document.getElementById('inp');
+  inp.addEventListener('input', ()=>{ autoGrow(inp); updateSendState(); });
+  inp.addEventListener('keydown', (e)=>{
+    if(e.key==='Enter' && !e.shiftKey){
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+
+  document.getElementById('micBtn').addEventListener('click', toggleVoice);
+  document.getElementById('imgBtn').addEventListener('click', ()=>document.getElementById('fileInp').click());
+  document.getElementById('fileInp').addEventListener('change', (e)=>{
+    handleImageFile(e.target.files[0]);
+  });
+
+  document.getElementById('modelSel').addEventListener('change', (e)=>{
+    state.model = e.target.value;
+  });
+
+  document.getElementById('kGenBtn').addEventListener('click', generateKundali);
+  document.getElementById('newsRefreshBtn').addEventListener('click', loadNews);
+
+  setupVoice();
+}
+
+init();
+</script>
+</body>
+</html>
