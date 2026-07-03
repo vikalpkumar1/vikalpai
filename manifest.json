@@ -1,0 +1,39 @@
+{
+  "name": "Vikalp AI - Bharat ka Sarvashreshtha AI",
+  "short_name": "Vikalp AI",
+  "description": "Vikalp AI — Bharat ka sabse shaktishali AI. 10 expert personas, 12 Indian languages, Kundali, Panchang, Shayari, News, voice chat aur bahut kuch.",
+  "start_url": "/index1.html",
+  "id": "/index1.html",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "portrait-primary",
+  "background_color": "#070509",
+  "theme_color": "#070509",
+  "lang": "hi-IN",
+  "dir": "ltr",
+  "categories": ["lifestyle", "education", "entertainment"],
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Maha Chat",
+      "short_name": "Chat",
+      "url": "/index1.html",
+      "description": "Vikalp AI se seedhe baat shuru karein"
+    }
+  ]
+}
